@@ -107,11 +107,29 @@
             width: calc(25% - 15px);
             min-width: 150px;
             transition: transform 0.2s, background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
         .book-btn:hover:not(.taken) { transform: scale(1.05); }
         .book-btn.active-book {
             background-color: #117a8b !important;
             color: white !important;
+        }
+
+        /* ספר מלא - אפור בהיר ונקי */
+        .book-btn.taken {
+            background-color: #e0e0e0 !important;
+            color: #9e9e9e !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .book-full-label {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.8;
         }
 
         /* אזור הפרקים */
@@ -171,12 +189,6 @@
             background-color: #e0e0e0 !important;
             color: #9e9e9e !important;
         }
-        .book-btn.taken {
-            background-color: #e0e0e0 !important;
-            color: #9e9e9e !important;
-            cursor: not-allowed;
-            transform: none !important;
-        }
 
         /* אזור התחתית - קישור והנצחה קבועה */
         .footer-container {
@@ -201,7 +213,6 @@
             text-decoration: underline;
         }
         
-        /* שורת ההנצחה הקבועה לכל הגרסאות */
         .eternal-memorial {
             font-size: 11px;
             color: #95a5a6;
@@ -336,19 +347,17 @@
         }
         window.userUUID = localStorage.getItem('tanach_user_uuid');
 
-        // האזנה לכותרות הסבב מ-Firebase
         const configRef = ref(database, 'studies/' + window.studyID + '/config');
         onValue(configRef, (snapshot) => {
             const config = snapshot.val();
             const mainTitle = document.getElementById('mainTitle');
             const subTitle = document.getElementById('subTitle');
             
-            mainTitle.innerText = "לומדים את התנ\"ך ביחד"; // כותרת קבועה תמיד
+            mainTitle.innerText = "לומדים את התנ\"ך ביחד";
             
             if (config) {
                 if (config.subtitle) subTitle.innerText = config.subtitle;
             } else {
-                // ברירת המחדל המקורית והרשמית שלכם
                 subTitle.innerText = "לעילוי נשמת אהובנו הגיבור\nמעוז ישראל רקנטי הי\"ד";
             }
         });
@@ -378,7 +387,6 @@
             remove(ref(database, 'studies/' + window.studyID + '/takenChapters/' + chapterKey));
         };
 
-        // יצירת סבב חדש ללא שאלת כותרת ראשית
         window.createNewStudyInDB = function(id, managerName, subtitle) {
             set(ref(database, 'studies/' + id + '/config'), {
                 manager: managerName,
@@ -506,8 +514,16 @@
                 const btn = document.createElement('button');
                 btn.className = 'book-btn';
                 btn.id = `book-btn-${book.name}`;
-                btn.innerText = book.name;
-                if (checkIfBookIsFinished(book.name, book.ch)) btn.classList.add('taken');
+                
+                const isFinished = checkIfBookIsFinished(book.name, book.ch);
+                
+                if (isFinished) {
+                    btn.classList.add('taken');
+                    btn.innerHTML = `<strong>${book.name}</strong><span class="book-full-label">הספר מלא ❤️</span>`;
+                } else {
+                    btn.innerHTML = `<strong>${book.name}</strong>`;
+                }
+                
                 if (book.name === window.activeBookName) btn.classList.add('active-book');
                 
                 btn.onclick = () => selectBook(book.name, book.ch);
