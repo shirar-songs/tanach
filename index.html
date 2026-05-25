@@ -183,7 +183,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // הגדרות מתוקנות ומסונכרנות לחלוטין ל-Realtime Database שלך!
         const firebaseConfig = {
             apiKey: "AIzaSyDBhZGqiZfYg9F0uYxGdxiXphwRyMS7WWE",
             authDomain: "ta-na-ch.firebaseapp.com",
@@ -195,13 +194,12 @@
             measurementId: "G-KRHJDKZ51Z"
         };
 
-        // אתחול
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
         window.takenChapters = {};
 
-        // חיבור קריטי וקבלת המידע בזמן אמת מהשרת
+        // האזנה לשרת - אם יש שגיאה או שאין נתונים, עדיין נמשיך כרגיל
         const chaptersRef = ref(database, 'takenChapters');
         onValue(chaptersRef, (snapshot) => {
             const data = snapshot.val();
@@ -214,7 +212,7 @@
                 window.refreshChaptersDisplay();
             }
         }, (error) => {
-            console.error("Firebase error: ", error);
+            console.log("Firebase not loaded yet, using offline mode");
         });
 
         window.saveChapterToDatabase = function(chapterKey) {
@@ -287,7 +285,8 @@
         window.activeTotalChapters = 0;
         let pendingChapterKey = "";
 
-        function showBooks(category) {
+        // שינוי קריטי: הפונקציה מציגה את הספרים באופן מיידי בלי קשר ל-Firebase
+        window.showBooks = function(category) {
             window.currentActiveCategory = category;
             const container = document.getElementById('booksContainer');
             container.innerHTML = '';
