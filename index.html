@@ -58,7 +58,7 @@
         }
         .category-btn:hover { background-color: #138496; }
 
-        /* אזור הספרים (שינוי מבנה ל-Flex כדי לאפשר הזרקת אלמנט בשורה חדשה) */
+        /* אזור הספרים */
         .books-container {
             display: none;
             display: flex;
@@ -81,7 +81,7 @@
             font-weight: bold;
             border-radius: 6px;
             cursor: pointer;
-            width: calc(25% - 15px); /* מציג 4 ספרים בשורה במחשב */
+            width: calc(25% - 15px);
             min-width: 150px;
             transition: transform 0.2s, background-color 0.3s;
         }
@@ -91,7 +91,7 @@
             color: white !important;
         }
 
-        /* אזור הפרקים החדש - נמתח לרוחב מלא מתחת לשורת הספר */
+        /* אזור הפרקים */
         .chapters-section {
             width: 100%;
             background: #fdfefe;
@@ -103,11 +103,35 @@
             box-sizing: border-box;
         }
         .chapters-section h3 { margin-top: 0; color: #5d4037; }
+        
+        /* גריד פרקים מותאם להכלת השם מעל */
         .chapters-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 12px;
         }
+        
+        /* קופסת מעטפת לכל פרק + שם */
+        .chapter-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        /* השם שיופיע בקטן ממש מעל הפרק */
+        .chapter-owner-name {
+            font-size: 10px;
+            color: #7f8c8d;
+            font-weight: bold;
+            max-width: 65px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 2px;
+            height: 14px;
+        }
+
         .chapter-btn {
             background-color: #8d6e63;
             color: white;
@@ -117,11 +141,13 @@
             font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
             transition: background-color 0.3s;
         }
         .chapter-btn:hover { background-color: #795548; }
         
-        /* עיצוב פרק ותת-ספר תפוס */
+        /* עיצוב פרק תפוס */
         .chapter-btn.taken {
             background-color: #e0e0e0 !important;
             color: #9e9e9e !important;
@@ -133,7 +159,7 @@
             transform: none !important;
         }
 
-        /* חלונית קופצת */
+        /* חלונית קופצת בסיסית */
         .custom-modal-overlay {
             display: none;
             position: fixed;
@@ -155,12 +181,27 @@
             max-width: 450px;
             width: 90%;
             text-align: center;
+            transition: background-color 0.3s, border-color 0.3s;
         }
+        
+        /* עיצוב מיוחד לחלונית ביטול (אזהרה) */
+        .custom-modal.warning-mode {
+            background-color: #ffe6cc !important;
+            border-color: #ff9933 !important;
+        }
+        
         .custom-modal h2 {
-            color: #117a8b;
+            color: #333333;
             margin-top: 0;
             font-size: 24px;
+            line-height: 1.4;
         }
+        
+        .red-text {
+            color: #d9534f !important;
+            font-weight: bold;
+        }
+
         .modal-buttons {
             display: flex;
             justify-content: center;
@@ -183,11 +224,28 @@
         }
         .modal-btn.confirm:hover { background-color: #138496; }
         
+        .warning-mode .modal-btn.confirm {
+            background-color: #e67e22;
+        }
+        .warning-mode .modal-btn.confirm:hover { background-color: #d35400; }
+
         .modal-btn.cancel {
             background-color: #e0e0e0;
             color: #333;
         }
         .modal-btn.cancel:hover { background-color: #d5d5d5; }
+
+        /* עיצוב שדה קלט של השם */
+        .name-input {
+            width: 80%;
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #17a2b8;
+            border-radius: 6px;
+            margin-top: 15px;
+            text-align: center;
+            outline: none;
+        }
     </style>
 
     <script type="module">
@@ -210,6 +268,7 @@
 
         window.takenChapters = {};
 
+        // יצירת מזהה מכשיר ייחודי וסודי
         if (!localStorage.getItem('tanach_user_uuid')) {
             const uuid = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
             localStorage.setItem('tanach_user_uuid', uuid);
@@ -231,8 +290,13 @@
             console.log("Firebase status: Offline/Loading");
         });
 
+        // שמירת אובייקט שמכיל גם את ה-ID וגם את שם המשתמש הכתוב
         window.saveChapterToDatabase = function(chapterKey) {
-            set(ref(database, 'takenChapters/' + chapterKey), window.userUUID);
+            const userName = localStorage.getItem('tanach_user_name') || "לומד/ת";
+            set(ref(database, 'takenChapters/' + chapterKey), {
+                uid: window.userUUID,
+                name: userName
+            });
         };
 
         window.removeChapterFromDatabase = function(chapterKey) {
@@ -256,8 +320,11 @@
     <div id="booksContainer" class="books-container" style="display: none;"></div>
 
     <div id="customModalOverlay" class="custom-modal-overlay">
-        <div class="custom-modal">
-            <h2 id="modalText">האם אתה רוצה להשתבץ לפרק?</h2>
+        <div id="modalCard" class="custom-modal">
+            <h2 id="modalText"></h2>
+            <div id="nameInputContainer" style="display: none;">
+                <input type="text" id="userNameInput" class="name-input" placeholder="הקלד את שמך כאן...">
+            </div>
             <div class="modal-buttons">
                 <button id="modalConfirmBtn" class="modal-btn confirm">כן</button>
                 <button id="modalCancelBtn" class="modal-btn cancel">לא</button>
@@ -298,7 +365,15 @@
         window.activeBookName = "";
         window.activeTotalChapters = 0;
         let pendingChapterKey = "";
-        let currentModalMode = "join";
+        let currentModalMode = "join"; // "join", "leave", "alert", "ask_name"
+
+        // בדיקה בעליית האתר האם יש שם שמור
+        window.addEventListener('load', () => {
+            if (!localStorage.getItem('tanach_user_name')) {
+                currentModalMode = "ask_name";
+                openCustomModal("שלום! אנא הזן את שמך כדי להתחיל:");
+            }
+        });
 
         window.showBooks = function(category) {
             window.currentActiveCategory = category;
@@ -306,7 +381,6 @@
             container.innerHTML = '';
             
             db[category].forEach(book => {
-                // יצירת כפתור הספר
                 const btn = document.createElement('button');
                 btn.className = 'book-btn';
                 btn.id = `book-btn-${book.name}`;
@@ -323,7 +397,6 @@
                 btn.onclick = () => selectBook(book.name, book.ch);
                 container.appendChild(btn);
 
-                // אם זה הספר הפעיל הנוכחי, נזריק מיד אחריו את אלמנט ה-Container של הפרקים
                 if (book.name === window.activeBookName) {
                     const chaptersSection = document.createElement('div');
                     chaptersSection.id = 'chaptersSection';
@@ -340,7 +413,6 @@
         }
 
         function selectBook(bookName, totalChapters) {
-            // אם לחצו על ספר שכבר פתוח, נסגור אותו
             if (window.activeBookName === bookName) {
                 window.activeBookName = "";
                 window.activeTotalChapters = 0;
@@ -359,28 +431,50 @@
             grid.innerHTML = '';
 
             for (let i = 1; i <= window.activeTotalChapters; i++) {
+                const chapterKey = `${window.activeBookName}-${i}`;
+                
+                // שליפת מידע על הסטטוס (תומך גם במבנה הישן וגם בחדש עם השם)
+                const chapterData = window.takenChapters ? window.takenChapters[chapterKey] : null;
+                const isTaken = !!chapterData;
+                const chapterOwnerID = chapterData && typeof chapterData === 'object' ? chapterData.uid : chapterData;
+                const chapterOwnerName = chapterData && typeof chapterData === 'object' ? chapterData.name : "";
+
+                // יצירת קופסת מעטפת לפרק ולשם
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chapter-wrapper';
+
+                // יצירת אלמנט השם שיופיע מעל
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'chapter-owner-name';
+                nameLabel.innerText = isTaken ? chapterOwnerName : "";
+                wrapper.appendChild(nameLabel);
+
+                // יצירת כפתור הפרק
                 const btn = document.createElement('button');
                 btn.className = 'chapter-btn';
                 const hebLetter = numToHeb(i);
                 btn.innerText = hebLetter;
-                
-                const chapterKey = `${window.activeBookName}-${i}`;
-                const chapterOwner = window.takenChapters ? window.takenChapters[chapterKey] : null;
-                const isTaken = !!chapterOwner;
                 
                 if (isTaken) {
                     btn.classList.add('taken');
                 }
 
                 btn.onclick = () => {
+                    // הגנה: אם המשתמש לא הזין שם, לא מאפשרים שיבוץ
+                    if (!localStorage.getItem('tanach_user_name')) {
+                        currentModalMode = "ask_name";
+                        openCustomModal("אנא הזן את שמך כדי להשתבץ לפרקים:");
+                        return;
+                    }
+
                     pendingChapterKey = chapterKey;
                     if (isTaken) {
-                        if (chapterOwner === window.userUUID) {
+                        if (chapterOwnerID === window.userUUID) {
                             currentModalMode = "leave";
-                            openCustomModal(`האם אתה בטוח שאתה רוצה לבטל את ההשתבצות לפרק ${hebLetter} בספר ${window.activeBookName}?`);
+                            openCustomModal(`האם אתה בטוח שאתה רוצה <span class="red-text">לבטל</span> את ההשתבצות לפרק ${hebLetter} בספר ${window.activeBookName}?`);
                         } else {
                             currentModalMode = "alert";
-                            openCustomModal(`פרק ${hebLetter} בספר ${window.activeBookName} כבר נתפס על ידי לומד אחר.`);
+                            openCustomModal(`פרק ${hebLetter} בספר ${window.activeBookName} כבר נתפס על ידי ${chapterOwnerName || 'לומד אחר'}.`);
                         }
                     } else {
                         currentModalMode = "join";
@@ -388,21 +482,34 @@
                     }
                 };
                 
-                grid.appendChild(btn);
+                wrapper.appendChild(btn);
+                grid.appendChild(wrapper);
             }
         }
 
-        function openCustomModal(text) {
-            document.getElementById('modalText').innerText = text;
+        function openCustomModal(htmlText) {
+            const modalTextEl = document.getElementById('modalText');
             const cancelBtn = document.getElementById('modalCancelBtn');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const mCard = document.getElementById('modalCard');
+            const nameContainer = document.getElementById('nameInputContainer');
             
-            if (currentModalMode === "alert") {
-                document.getElementById('modalConfirmBtn').innerText = "אוקיי";
+            modalTextEl.innerHTML = htmlText;
+            mCard.classList.remove('warning-mode');
+            nameContainer.style.display = "none";
+            cancelBtn.style.display = "inline-block";
+            confirmBtn.innerText = "כן";
+            cancelBtn.innerText = "לא";
+            
+            if (currentModalMode === "ask_name") {
+                nameContainer.style.display = "block";
+                confirmBtn.innerText = "שמור והמשך";
                 cancelBtn.style.display = "none";
-            } else {
-                document.getElementById('modalConfirmBtn').innerText = "כן";
-                cancelBtn.innerText = "לא";
-                cancelBtn.style.display = "inline-block";
+            } else if (currentModalMode === "alert") {
+                confirmBtn.innerText = "אוקיי";
+                cancelBtn.style.display = "none";
+            } else if (currentModalMode === "leave") {
+                mCard.classList.add('warning-mode');
             }
             
             document.getElementById('customModalOverlay').style.display = 'flex';
@@ -413,6 +520,17 @@
         }
 
         document.getElementById('modalConfirmBtn').onclick = () => {
+            if (currentModalMode === "ask_name") {
+                const nameVal = document.getElementById('userNameInput').value.trim();
+                if (!nameVal) {
+                    alert("אנא הקלד שם תקין כדי להמשיך.");
+                    return;
+                }
+                localStorage.setItem('tanach_user_name', nameVal);
+                closeCustomModal();
+                return;
+            }
+
             if (pendingChapterKey) {
                 if (currentModalMode === "join" && typeof window.saveChapterToDatabase === 'function') {
                     window.saveChapterToDatabase(pendingChapterKey);
