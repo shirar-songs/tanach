@@ -178,10 +178,16 @@
             transform: none !important;
         }
 
-        /* כפתור פתיחת סבב חדש בתחתית האתר */
-        .footer-link {
+        /* אזור התחתית - קישור והנצחה קבועה */
+        .footer-container {
             margin-top: 50px;
             margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .footer-link {
             font-size: 13px;
             color: #7f8c8d;
         }
@@ -193,6 +199,18 @@
         }
         .footer-link a:hover {
             text-decoration: underline;
+        }
+        
+        /* שורת ההנצחה הקבועה לכל הגרסאות */
+        .eternal-memorial {
+            font-size: 11px;
+            color: #95a5a6;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 12px;
+            width: 200px;
+            margin: 0 auto;
         }
 
         /* חלונית קופצת */
@@ -270,7 +288,6 @@
             outline: none;
         }
 
-        /* אזור להצגת הקישור המוכן להעתקה */
         .link-output-box {
             background: #eef9f6;
             border: 2px dashed #2ecc71;
@@ -308,9 +325,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        // חילוץ מזהה הלימוד מכתובת האתר (למשל ?study=maoz)
         const urlParams = new URLSearchParams(window.location.search);
-        // אם אין מזהה בכתובת, ברירת המחדל היא הלימוד לזכר מעוז
         window.studyID = urlParams.get('study') || 'maoz_original';
 
         window.takenChapters = {};
@@ -321,24 +336,23 @@
         }
         window.userUUID = localStorage.getItem('tanach_user_uuid');
 
-        // האזנה לכותרות הסבב הספציפי מתוך Firebase
+        // האזנה לכותרות הסבב מ-Firebase
         const configRef = ref(database, 'studies/' + window.studyID + '/config');
         onValue(configRef, (snapshot) => {
             const config = snapshot.val();
             const mainTitle = document.getElementById('mainTitle');
             const subTitle = document.getElementById('subTitle');
             
+            mainTitle.innerText = "לומדים את התנ\"ך ביחד"; // כותרת קבועה תמיד
+            
             if (config) {
-                if (config.title) mainTitle.innerText = config.title;
                 if (config.subtitle) subTitle.innerText = config.subtitle;
             } else {
-                // ברירת המחדל הרשמית שלכם
-                mainTitle.innerText = "לומדים את התנ\"ך ביחד";
+                // ברירת המחדל המקורית והרשמית שלכם
                 subTitle.innerText = "לעילוי נשמת אהובנו הגיבור\nמעוז ישראל רקנטי הי\"ד";
             }
         });
 
-        // האזנה לפרקים התפוסים של הסבב הספציפי בלבד
         const chaptersRef = ref(database, 'studies/' + window.studyID + '/takenChapters');
         onValue(chaptersRef, (snapshot) => {
             const data = snapshot.val();
@@ -352,7 +366,6 @@
             }
         });
 
-        // שמירת פרק לסבב הנוכחי
         window.saveChapterToDatabase = function(chapterKey) {
             const userName = localStorage.getItem('tanach_user_name') || "לומד/ת";
             set(ref(database, 'studies/' + window.studyID + '/takenChapters/' + chapterKey), {
@@ -361,16 +374,14 @@
             });
         };
 
-        // מחיקת פרק מהסבב הנוכחי
         window.removeChapterFromDatabase = function(chapterKey) {
             remove(ref(database, 'studies/' + window.studyID + '/takenChapters/' + chapterKey));
         };
 
-        // פונקציה ליצירת סבב חדש לחלוטין במסד הנתונים
-        window.createNewStudyInDB = function(id, managerName, title, subtitle) {
+        // יצירת סבב חדש ללא שאלת כותרת ראשית
+        window.createNewStudyInDB = function(id, managerName, subtitle) {
             set(ref(database, 'studies/' + id + '/config'), {
                 manager: managerName,
-                title: title,
                 subtitle: subtitle,
                 createdAt: Date.now()
             });
@@ -394,8 +405,13 @@
 
     <div id="booksContainer" class="books-container" style="display: none;"></div>
 
-    <div class="footer-link">
-        רוצים גם? <a onclick="openCreateStudyModal()">לפתיחת סבב לימוד חדש משלכם</a>
+    <div class="footer-container">
+        <div class="footer-link">
+            רוצים גם? <a onclick="openCreateStudyModal()">לפתיחת סבב לימוד חדש משלכם</a>
+        </div>
+        <div class="eternal-memorial">
+            לעילוי נשמת מעוז ישראל רקנטי הי"ד 🇮🇱
+        </div>
     </div>
 
     <div id="customModalOverlay" class="custom-modal-overlay">
@@ -410,10 +426,7 @@
                 <label style="font-weight: bold; color: #2c3e50; font-size:14px;">איך קוראים למנהל הלימוד?</label>
                 <input type="text" id="newManagerInput" class="name-input" placeholder="למשל: משפחת כהן / יובל">
                 
-                <label style="font-weight: bold; color: #2c3e50; font-size:14px;">כותרת ראשית של האתר:</label>
-                <input type="text" id="newTitleInput" class="name-input" value="לומדים את התנ&quot;ך ביחד">
-                
-                <label style="font-weight: bold; color: #2c3e50; font-size:14px;">כותרת משנה / הקדשה:</label>
+                <label style="font-weight: bold; color: #2c3e50; font-size:14px;">כותרת משנה / הקדשה עבורכם:</label>
                 <textarea id="newSubtitleInput" class="textarea-input" placeholder="למשל: לרפואת חיילנו / לעילוי נשמת..."></textarea>
             </div>
 
@@ -470,7 +483,6 @@
             document.getElementById('modalCancelBtn').innerText = "ביטול";
         }
 
-        // פתיחת טופס ליצירת סבב חדש
         window.openCreateStudyModal = function() {
             currentModalMode = "create_study";
             document.getElementById('newManagerInput').value = "";
@@ -614,25 +626,21 @@
                 return;
             }
             
-            // תהליך יצירת הקישור החדש
             if (currentModalMode === "create_study") {
                 const manager = document.getElementById('newManagerInput').value.trim();
-                const title = document.getElementById('newTitleInput').value.trim();
                 const subtitle = document.getElementById('newSubtitleInput').value.trim();
                 
-                if (!manager || !title) {
-                    alert("אנא מלא את שם המנהל וכותרת האתר.");
+                if (!manager) {
+                    alert("אנא מלא את שם מנהל הלימוד.");
                     return;
                 }
                 
-                // יצירת קוד ייחודי קצר על בסיס הזמן הנוכחי
                 const uniqueId = 'study_' + Math.random().toString(36).substring(2, 7) + Date.now().toString(36).substring(4, 8);
                 
                 if (typeof window.createNewStudyInDB === 'function') {
-                    window.createNewStudyInDB(uniqueId, manager, title, subtitle);
+                    window.createNewStudyInDB(uniqueId, manager, subtitle);
                 }
                 
-                // בניית הקישור החדש שיישלח למשתמש
                 const baseLink = window.location.href.split('?')[0];
                 const newGeneratedLink = `${baseLink}?study=${uniqueId}`;
                 
