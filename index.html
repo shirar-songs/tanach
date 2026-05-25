@@ -23,20 +23,17 @@
             max-width: 900px;
             margin: 0 auto 30px auto;
         }
-        .logo {
-            font-size: 50px;
-            margin-bottom: 10px;
-        }
         h1 {
             color: #2c3e50;
-            margin: 0 0 10px 0;
+            margin: 0 0 15px 0;
             font-size: 36px;
         }
         .subtitle {
             color: #7f8c8d;
             font-size: 20px;
             font-weight: bold;
-            margin: 0 0 5px 0;
+            margin: 0;
+            line-height: 1.5;
         }
 
         /* שלושת המלבנים הראשיים */
@@ -113,9 +110,14 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        .chapter-btn:hover:not(.taken) { background-color: #795548; }
+        .chapter-btn:hover { background-color: #795548; }
         
-        .chapter-btn.taken, .book-btn.taken {
+        /* עיצוב פרק תפוס */
+        .chapter-btn.taken {
+            background-color: #e0e0e0 !important;
+            color: #9e9e9e !important;
+        }
+        .book-btn.taken {
             background-color: #e0e0e0 !important;
             color: #9e9e9e !important;
             cursor: not-allowed;
@@ -181,7 +183,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDBhZGqiZfYg9F0uYxGdxiXphwRyMS7WWE",
@@ -199,7 +201,13 @@
 
         window.takenChapters = {};
 
-        // האזנה לשרת - אם יש שגיאה או שאין נתונים, עדיין נמשיך כרגיל
+        // יצירת מזהה מכשיר ייחודי וסודי (User ID) השמור בדפדפן
+        if (!localStorage.getItem('tanach_user_uuid')) {
+            const uuid = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            localStorage.setItem('tanach_user_uuid', uuid);
+        }
+        window.userUUID = localStorage.getItem('tanach_user_uuid');
+
         const chaptersRef = ref(database, 'takenChapters');
         onValue(chaptersRef, (snapshot) => {
             const data = snapshot.val();
@@ -212,20 +220,25 @@
                 window.refreshChaptersDisplay();
             }
         }, (error) => {
-            console.log("Firebase not loaded yet, using offline mode");
+            console.log("Firebase status: Offline/Loading");
         });
 
+        // שמירה לשרת יחד עם מזהה המשתמש הייחודי
         window.saveChapterToDatabase = function(chapterKey) {
-            set(ref(database, 'takenChapters/' + chapterKey), true);
+            set(ref(database, 'takenChapters/' + chapterKey), window.userUUID);
+        };
+
+        // מחיקה מהשרת
+        window.removeChapterFromDatabase = function(chapterKey) {
+            remove(ref(database, 'takenChapters/' + chapterKey));
         };
     </script>
 </head>
 <body>
 
     <div class="header-container">
-        <div class="logo">📖</div>
         <h1>לומדים את התנ"ך ביחד</h1>
-        <p class="subtitle">לעילוי נשמת אהובנו הגיבור מעוז ישראל רקנטי הי"ד</p>
+        <p class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
     </div>
 
     <div class="main-categories">
@@ -246,7 +259,7 @@
             <h2 id="modalText">האם אתה רוצה להשתבץ לפרק?</h2>
             <div class="modal-buttons">
                 <button id="modalConfirmBtn" class="modal-btn confirm">כן</button>
-                <button id="modalCancelBtn" class="modal-btn cancel">לא, אני אחפש פרק אחר</button>
+                <button id="modalCancelBtn" class="modal-btn cancel">לא</button>
             </div>
         </div>
     </div>
@@ -284,8 +297,8 @@
         window.activeBookName = "";
         window.activeTotalChapters = 0;
         let pendingChapterKey = "";
+        let currentModalMode = "join"; // "join", "leave", "alert"
 
-        // שינוי קריטי: הפונקציה מציגה את הספרים באופן מיידי בלי קשר ל-Firebase
         window.showBooks = function(category) {
             window.currentActiveCategory = category;
             const container = document.getElementById('booksContainer');
@@ -317,6 +330,9 @@
         window.refreshChaptersDisplay = function() {
             const section = document.getElementById('chaptersSection');
             const grid = document.getElementById('chaptersGrid');
+            
+            if (!window.activeBookName) return;
+            
             document.getElementById('currentBookTitle').innerText = 'פרקים בספר ' + window.activeBookName;
             grid.innerHTML = '';
 
@@ -327,15 +343,29 @@
                 btn.innerText = hebLetter;
                 
                 const chapterKey = `${window.activeBookName}-${i}`;
+                const chapterOwner = window.takenChapters ? window.takenChapters[chapterKey] : null;
+                const isTaken = !!chapterOwner;
                 
-                if (window.takenChapters && window.takenChapters[chapterKey]) {
+                if (isTaken) {
                     btn.classList.add('taken');
                 }
 
                 btn.onclick = () => {
-                    if (btn.classList.contains('taken')) return;
                     pendingChapterKey = chapterKey;
-                    openCustomModal(`האם אתה רוצה להשתבץ לפרק ${hebLetter} בספר ${window.activeBookName}?`);
+                    if (isTaken) {
+                        // אם המשתמש הנוכחי הוא זה שתפס את הפרק
+                        if (chapterOwner === window.userUUID) {
+                            currentModalMode = "leave";
+                            openCustomModal(`האם אתה בטוח שאתה רוצה לבטל את ההשתבצות לפרק ${hebLetter} בספר ${window.activeBookName}?`);
+                        } else {
+                            // אם מישהו אחר תפס את הפרק - חוסמים את הגישה
+                            currentModalMode = "alert";
+                            openCustomModal(`פרק ${hebLetter} בספר ${window.activeBookName} כבר נתפס על ידי לומד אחר.`);
+                        }
+                    } else {
+                        currentModalMode = "join";
+                        openCustomModal(`האם אתה רוצה להשתבץ לפרק ${hebLetter} בספר ${window.activeBookName}?`);
+                    }
                 };
                 
                 grid.appendChild(btn);
@@ -346,6 +376,17 @@
 
         function openCustomModal(text) {
             document.getElementById('modalText').innerText = text;
+            const cancelBtn = document.getElementById('modalCancelBtn');
+            
+            if (currentModalMode === "alert") {
+                document.getElementById('modalConfirmBtn').innerText = "אוקיי";
+                cancelBtn.style.display = "none";
+            } else {
+                document.getElementById('modalConfirmBtn').innerText = "כן";
+                cancelBtn.innerText = "לא";
+                cancelBtn.style.display = "inline-block";
+            }
+            
             document.getElementById('customModalOverlay').style.display = 'flex';
         }
 
@@ -354,8 +395,12 @@
         }
 
         document.getElementById('modalConfirmBtn').onclick = () => {
-            if (pendingChapterKey && typeof window.saveChapterToDatabase === 'function') {
-                window.saveChapterToDatabase(pendingChapterKey);
+            if (pendingChapterKey) {
+                if (currentModalMode === "join" && typeof window.saveChapterToDatabase === 'function') {
+                    window.saveChapterToDatabase(pendingChapterKey);
+                } else if (currentModalMode === "leave" && typeof window.removeChapterFromDatabase === 'function') {
+                    window.removeChapterFromDatabase(pendingChapterKey);
+                }
             }
             closeCustomModal();
         };
