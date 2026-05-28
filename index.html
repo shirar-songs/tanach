@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>לימוד תנ"ך משותף</title>
-    <!-- חיבור ל-Firebase SDK הישן והפשוט שמתאים לעבודה ישירה בתוך קובץ HTML אחד -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -85,22 +83,20 @@
             font-size: 0.85em;
             color: #16a085;
         }
-        
-        /* עיצוב החלונית - קטנה ועדינה יותר */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.4); /* רקע כהה עדין יותר */
+            background: rgba(0, 0, 0, 0.6);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.25s ease;
+            transition: opacity 0.3s ease;
         }
         .modal-overlay.show {
             opacity: 1;
@@ -108,48 +104,35 @@
         }
         .modal-content {
             background: #fff;
-            padding: 25px 30px; /* צמצום הריווחים הפנימיים */
-            border-radius: 8px;
+            padding: 40px;
+            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            max-width: 400px; /* הקטנת הרוחב המקסימלי */
-            width: 85%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 90%;
             position: relative;
-            animation: popIn 0.3s ease-out;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         @keyframes popIn {
-            from { transform: scale(0.92); opacity: 0; }
+            from { transform: scale(0.8); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
         .close-btn {
             position: absolute;
-            top: 10px;
-            right: 12px;
-            font-size: 20px;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
             background: none;
             border: none;
             cursor: pointer;
-            color: #bdc3c7;
+            color: #95a5a6;
         }
         .close-btn:hover {
-            color: #7f8c8d;
+            color: #333;
         }
-        .modal-content h3 {
+        .modal-content h2 {
             color: #27ae60;
-            margin-top: 5px;
-            margin-bottom: 12px;
-            font-size: 1.3em;
-        }
-        .modal-text {
-            font-size: 1.05em;
-            line-height: 1.4;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-        .modal-footer-note {
-            color: #95a5a6;
-            font-size: 0.8em;
-            margin-top: 10px;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -158,6 +141,7 @@
 <div class="container">
     <header>
         <h1>לימוד תנ"ך משותף</h1>
+        <!-- השורות החדשות שנוספו בדיוק כאן -->
         <h2 class="site-subtitle">לעילוי נשמת אהובנו הגיבור מעוז ישראל בן אליהו ואיילת שרה למשפחת רקנטי</h2>
         <p class="site-deadline">נא להשלים את הלימוד עד ליום השלושים - כ"ט בסיוון</p>
     </header>
@@ -167,21 +151,20 @@
     </main>
 </div>
 
-<!-- חלונית סיום קטנה ועדינה (נפתחת רק כשכל התנ"ך מושלם) -->
 <div class="modal-overlay" id="completion-modal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <button class="close-btn" onclick="toggleModal(false)">&times;</button>
-        <h3>תם ונשלם! 🎉</h3>
-        <p class="modal-text">
-            כל פרקי התנ"ך שובצו בהצלחה. <br>
+        <h2>אשריכם ישראל! 🎉</h2>
+        <p style="font-size: 1.2em; line-height: 1.5;">
+            כל פרקי התנ"ך שובצו בהצלחה! <br>
             הלימוד המשותף הושלם לעילוי נשמתו של מעוז ישראל ז"ל.
         </p>
-        <p class="modal-footer-note">(בלחיצה מחוץ לריבוע החלונית תיסגר וניתן להמשיך לצפות בשיבוצים)</p>
+        <p style="color: #7f8c8d; font-size: 0.9em; margin-top: 20px;">(ניתן לסגור חלונית זו ולהמשיך לצפות בשיבוצים)</p>
     </div>
 </div>
 
 <script>
-    // הגדרות החיבור ל-Firebase שלך (יש לוודא שהפרטים נכונים)
+    // הגדרות ה-Firebase המקוריות שלך - יש להחליף בפרטים האמיתיים שלך
     const firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -192,11 +175,9 @@
         appId: "YOUR_APP_ID"
     };
 
-    // אתחול Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // שליפת הנתונים והאזנה לשינויים בזמן אמת
     database.ref('/').on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
@@ -205,7 +186,6 @@
         checkTotalCompletion(data);
     });
 
-    // פונקציה שמציגה את הספרים והפרקים על המסך
     function renderBooks(data) {
         const container = document.getElementById('books-container');
         container.innerHTML = ''; 
@@ -251,7 +231,6 @@
         });
     }
 
-    // פונקציה שבודקת האם *כל* הפרקים בכל הספרים תפוסים
     function checkTotalCompletion(data) {
         let allTaken = true;
         let hasData = false;
@@ -275,7 +254,6 @@
         }
     }
 
-    // פונקציית פתיחה/סגירה של החלונית
     function toggleModal(show) {
         const modal = document.getElementById('completion-modal');
         if (show) {
@@ -285,7 +263,6 @@
         }
     }
 
-    // מאפשר סגירה בלחיצה מחוץ לחלונית
     function closeModal(event) {
         if (event.target.id === 'completion-modal') {
             toggleModal(false);
