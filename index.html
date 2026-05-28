@@ -402,6 +402,7 @@
         }
     </style>
 
+    <!-- טעינת Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, remove, get, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -437,11 +438,17 @@
                 const subTitle = document.getElementById('subTitle');
                 const mainImg = document.getElementById('mainProjectImage');
                 
+                // הגדרת תצוגת ירידת שורה תקינה בדפדפן
+                if (subTitle) {
+                    subTitle.style.whiteSpace = "pre-line";
+                }
+                
                 if (config && config.subtitle) {
                     window.currentProjectSubtitle = config.subtitle;
                     subTitle.innerText = config.subtitle;
                 } else {
-                    window.currentProjectSubtitle = "לעילוי נשמת אהובנו הגיבור\nמעוז ישראל רקנטי הי\"ד";
+                    window.currentProjectSubtitle = `לעילוי נשמת אהובנו הגיבור
+מעוז ישראל רקנטי הי"ד`;
                     subTitle.innerText = window.currentProjectSubtitle;
                 }
 
@@ -531,7 +538,7 @@
 
     <div class="header-container">
         <h1 id="mainTitle">לומדים את התנ"ך ביחד</h1>
-        <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי\"ד</p>
+        <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
         <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
     </div>
 
