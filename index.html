@@ -532,7 +532,7 @@
 
     <div class="header-container">
         <h1 id="mainTitle">לומדים את התנ"ך ביחד</h1>
-        <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
+        <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי\"ד</p>
         <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
     </div>
 
@@ -719,8 +719,7 @@
             if (!grid || !window.activeBookName) return;
             grid.innerHTML = '';
 
-            /* עצירה מדויקת בפרק האחרון כדי למנוע קוביות ריקות עודפות */
-            for (let i = 1; i <= window.activeTotalChapters && i <= 150; i++) {
+            for (let i = 1; i <= window.activeTotalChapters; i++) {
                 const chapterKey = `${window.activeBookName}-${i}`;
                 const chapterData = window.takenChapters ? window.takenChapters[chapterKey] : null;
                 const isTaken = !!chapterData;
@@ -737,6 +736,7 @@
 
                 const btn = document.createElement('button');
                 btn.className = 'chapter-btn';
+                
                 const hebLetter = numToHeb(i);
                 btn.innerText = hebLetter;
                 if (isTaken) btn.classList.add('taken');
