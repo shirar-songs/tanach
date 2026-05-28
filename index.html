@@ -24,7 +24,7 @@
             padding: 10px 0;
         }
 
-        /* תצוגת שלום, X למעלה משמאל */
+        /* תצוגת שלום, אורח למעלה משמאל */
         .user-greeting {
             font-size: 16px;
             font-weight: bold;
@@ -42,20 +42,25 @@
             transform: scale(1.05);
         }
 
-        /* כפתור רענון ייעודי לעומסים */
+        /* כפתור רענון נקי בסגנון גוגל - אפור בלי רקע מימין */
         .refresh-btn {
-            background-color: #2ecc71;
-            color: white;
+            background: none;
+            color: #7f8c8d;
             border: none;
-            padding: 8px 15px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 20px;
+            width: 35px;
+            height: 35px;
+            font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            transition: color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
         }
-        .refresh-btn:hover { background-color: #27ae60; }
+        .refresh-btn:hover { 
+            color: #2c3e50;
+            transform: scale(1.1);
+        }
 
         /* כותרת */
         .header-container {
@@ -76,14 +81,25 @@
             color: #7f8c8d;
             font-size: 20px;
             font-weight: bold;
-            margin: 0;
+            margin: 0 0 15px 0;
             line-height: 1.5;
             white-space: pre-line;
         }
 
+        /* עיצוב תמונת ההקדשה הדינמית */
+        .dedication-image {
+            display: none;
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin: 15px auto 0 auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
         /* באנר סיום חגיגי - מופיע כשכל התנ"ך מושלם */
         .completion-banner {
-            display: none; /* מופעל רק דרך ה-JS */
+            display: none;
             background: linear-gradient(135deg, #f39c12, #f1c40f);
             color: #2c3e50;
             max-width: 900px;
@@ -362,6 +378,7 @@
             font-family: inherit;
             resize: none;
             outline: none;
+            margin-bottom: 15px;
         }
 
         .link-output-box {
@@ -378,7 +395,7 @@
         }
 
         @media (max-width: 600px) {
-            .top-bar { flex-direction: column; gap: 10px; }
+            .top-bar { flex-direction: column-reverse; gap: 10px; }
             .header-container { margin-top: 10px; }
             .completion-banner h2 { font-size: 22px; }
             .completion-banner .dedication-line { font-size: 18px; }
@@ -408,15 +425,8 @@
         window.studyID = urlParams.get('study') || 'maoz_original';
 
         window.takenChapters = {};
-        window.currentProjectSubtitle = ""; // שמירת ההקדשה בצד
+        window.currentProjectSubtitle = ""; 
 
-        if (!localStorage.getItem('tanach_user_uuid')) {
-            const uuid = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-            localStorage.setItem('tanach_user_uuid', uuid);
-        }
-        window.userUUID = localStorage.getItem('tanach_user_uuid');
-
-        // פונקציה אופטימלית למשיכת מידע וניתוק מיידי כדי לא לתפוס מקום בשרת
         window.loadSnapshotFromDatabase = function() {
             goOnline(database);
             
@@ -424,9 +434,10 @@
             get(studyRef).then((snapshot) => {
                 const data = snapshot.val() || {};
                 
-                // עדכון כותרות
                 const config = data.config;
                 const subTitle = document.getElementById('subTitle');
+                const mainImg = document.getElementById('mainProjectImage');
+                
                 if (config && config.subtitle) {
                     window.currentProjectSubtitle = config.subtitle;
                     subTitle.innerText = config.subtitle;
@@ -435,13 +446,17 @@
                     subTitle.innerText = window.currentProjectSubtitle;
                 }
 
-                // עדכון פרקים תפוסים
+                if (config && config.imageUrl) {
+                    mainImg.src = config.imageUrl;
+                    mainImg.style.display = "block";
+                } else {
+                    mainImg.style.display = "none";
+                }
+
                 window.takenChapters = data.takenChapters || {};
                 
-                // בדיקה אם כל התנ"ך כולו הושלם
                 window.checkGlobalCompletion();
 
-                // רענון התצוגה המקומית
                 if (window.currentActiveCategory) {
                     window.showBooks(window.currentActiveCategory);
                 }
@@ -449,7 +464,6 @@
                     window.refreshChaptersDisplay();
                 }
                 
-                // ניתוק מיידי מהשרת לשמירה על מכסת החיבורים החינמית
                 goOffline(database);
             }).catch((err) => {
                 console.error(err);
@@ -457,18 +471,15 @@
             });
         };
 
-        // מנגנון שמירה בטוח שמוודא שאין כפל הרשמות ברגע האחרון
         window.saveChapterToDatabase = function(chapterKey, onSuccess, onFailure) {
             goOnline(database);
             const chapterRef = ref(database, 'studies/' + window.studyID + '/takenChapters/' + chapterKey);
             
             get(chapterRef).then((snapshot) => {
                 if (snapshot.exists()) {
-                    // הפרק נתפס בינתיים על ידי מישהו אחר!
                     goOffline(database);
                     onFailure(snapshot.val().name || "מישהו אחר");
                 } else {
-                    // הפרק פנוי, נרשום את המשתמש
                     const userName = localStorage.getItem('tanach_user_name') || "לומד/ת";
                     set(chapterRef, {
                         uid: window.userUUID,
@@ -493,34 +504,40 @@
             }).catch(() => goOffline(database));
         };
 
-        window.createNewStudyInDB = function(id, managerName, subtitle) {
+        window.createNewStudyInDB = function(id, managerName, subtitle, imageUrl) {
             goOnline(database);
             set(ref(database, 'studies/' + id + '/config'), {
                 manager: managerName,
                 subtitle: subtitle,
+                imageUrl: imageUrl || "",
                 createdAt: Date.now()
             }).then(() => goOffline(database));
         };
 
-        // טעינה ראשונית
+        if (!localStorage.getItem('tanach_user_uuid')) {
+            const uuid = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            localStorage.setItem('tanach_user_uuid', uuid);
+        }
+        window.userUUID = localStorage.getItem('tanach_user_uuid');
+
         window.loadSnapshotFromDatabase();
     </script>
 </head>
 <body>
 
     <div class="top-bar">
+        <button class="refresh-btn" onclick="window.loadSnapshotFromDatabase()" title="רענן רשימה">⟳</button>
         <div id="userGreeting" class="user-greeting" onclick="editCurrentName()" title="לחץ לשינוי השם">שלום, אורח</div>
-        <button class="refresh-btn" onclick="window.loadSnapshotFromDatabase()" title="עדכון ידני של הרשימה">🔄 רענן רשימה</button>
     </div>
 
     <div class="header-container">
         <h1 id="mainTitle">לומדים את התנ"ך ביחד</h1>
         <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
+        <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
     </div>
 
-    <!-- מלבן חגיגי על סיום כל התנ"ך כולו -->
     <div id="completionBanner" class="completion-banner">
-        <h2>ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך! </h2>
+        <h2>ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך!</h2>
         <div id="bannerDedication" class="dedication-line"></div>
         <p>בשורות טובות לכל עם ישראל! ❤️</p>
     </div>
@@ -538,7 +555,7 @@
             רוצים גם? <a onclick="openCreateStudyModal()">לפתיחת סבב לימוד חדש משלכם</a>
         </div>
         <div class="eternal-memorial">
-            <span>לעילוי נשמת מעוז ישראל רקנטי הי\"ד</span>
+            <span>לעילוי נשמת מעוז ישראל רקנטי הי"ד</span>
             <img src="https://flagcdn.com/w40/il.png" class="flag-img" alt="דגל ישראל">
         </div>
     </div>
@@ -557,6 +574,9 @@
                 
                 <label style="font-weight: bold; color: #2c3e50; font-size:14px;">כותרת משנה / הקדשה עבורכם:</label>
                 <textarea id="newSubtitleInput" class="textarea-input" placeholder="למשל: לרפואת חיילנו / לעילוי נשמת..."></textarea>
+
+                <label style="font-weight: bold; color: #2c3e50; font-size:14px;">קישור לתמונה מהאינטרנט (אופציונלי):</label>
+                <input type="text" id="newImageInput" class="name-input" placeholder="הדביקו קישור לתמונה (URL) כאן...">
             </div>
 
             <div id="linkOutputContainer" style="display: none;">
@@ -576,13 +596,13 @@
         const db = {
             tora: [{ name: "בראשית", ch: 50 }, { name: "שמות", ch: 40 }, { name: "ויקרא", ch: 27 }, { name: "במדבר", ch: 36 }, { name: "דברים", ch: 34 }],
             neviim: [{ name: "יהושע", ch: 24 }, { name: "שופטים", ch: 21 }, { name: "שמואל א'", ch: 31 }, { name: "שמואל ב'", ch: 24 }, { name: "מלכים א'", ch: 22 }, { name: "מלכים ב'", ch: 25 }, { name: "ישעיהו", ch: 66 }, { name: "ירמיהו", ch: 52 }, { name: "יחזקאל", ch: 48 }, { name: "הושע", ch: 14 }, { name: "יואל", ch: 4 }, { name: "עמוס", ch: 9 }, { name: "עובדיה", ch: 1 }, { name: "יונה", ch: 4 }, { name: "מיכה", ch: 7 }, { name: "נחום", ch: 3 }, { name: "חבקוק", ch: 3 }, { name: "צפניה", ch: 3 }, { name: "חגי", ch: 2 }, { name: "זכריה", ch: 14 }, { name: "מלאכי", ch: 3 }],
-            ktuvim: [{ name: "תהילים", ch: 150 }, { name: "משלי", ch: 31 }, { name: "איוב", ch: 42 }, { name: "שיר השירים", ch: 8 }, { name: "רות", ch: 4 }, { name: "איכה", ch: 5 }, { name: "קהלת", ch: 12 }, { name: "אסתר", ch: 10 }, { name: "דניאל", ch: 12 }, { name: "עזרא", ch: 10 }, { name: "נחמיה", ch: 13 }, { name: "דברי הימים א'", ch: 29 }, { name: "דברי הימים ב'", ch: 36 }]
+            ktuvim: [{ name: "תהילים", ch: 150 }, { name: "משלי", ch: 31 }, { name: "איוב", ch: 42 }, { name: "שיר השירים", ch: 8 }, { name: "רות", ch: 4 }, { name: "איכה", ch: 5 }, { name: "קהלת", ch: 12 }, { name: "אסתר", ch: 10 }, { name: "דניאל", ch: 12 }, { name: "עזרא", ch: 10 }, { name: "נחיה", ch: 13 }, { name: "דברי הימים א'", ch: 29 }, { name: "דברי הימים ב'", ch: 36 }]
         };
 
-        const TOTAL_TANACH_CHAPTERS = 929; // סך כל הפרקים בתנ"ך כולו
+        const TOTAL_TANACH_CHAPTERS = 929; 
 
         function numToHeb(num) {
-            const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל", "לא", "לב", "לג", "לד", "לה", "לו", "לז", "לח", "לט", "מ", "מא", "מב", "מג", "מד", "מה", "מו", "מז", "מח", "מט", "נ", "נא", "נב", "נג", "נד", "נה", "נו", "נז", "נח", "נט", "ס", "סא", "סב", "סג", "סד", "סה", "סו", "סז", "סח", "סט", "ע", "עא", "עב", "עג", "עד", "עה", "עו", "עז", "עח", "עט", "פ", "פא", "פב", "פג", "פד", "פה", "פו", "פז", "פח", "פט", "צ", "צא", "צב", "צג", "צד", "צה", "צו", "צח", "צט", "ק", "קא", "קב", "קג", "קד", "קה", "קו", "קז", "קח", "קט", "קי", "קיא", "קיב", "קיג", "קיד", "קטו", "קטז", "קיז", "קיח", "קיט", "קכ", "קכא", "קכב", "קכג", "קכד", "קכה", "קכו", "קכז", "קכח", "קכט", "קל", "קלא", "קלב", "קלג", "קלד", "קלה", "קלו", "קלז", "קלח", "קלט", "קמ", "קמא", "קמב", "קמג", "קמד", "קמה", "קמו", "קמז", "קמח", "קמפ", "קנ"];
+            const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל", "לא", "לב", "לג", "לד", "לה", "לו", "לז", "לח", "לט", "מ", "מא", "מב", "מג", "מד", "מה", "מו", "מז", "מח", "מט", "נ", "נא", "נב", "נג", "נד", "נה", "נו", "נז", "נח", "נט", "ס", "סא", "סב", "סג", "סד", "סה", "סו", "סז", "סח", "סט", "ע", "עא", "עב", "עג", "עד", "עה", "עו", "עז", "עח", "עט", "פ", "פא", "פב", "פג", "פד", "פה", "פו", "פז", "פח", "פט", "צ", "צא", "צב", "צג", "צד", "צה", "צו", "צח", "צט", "ק", "קא", "קב", "קג", "קד", "קה", "קו", "קז", "קח", "קט", "קי", "קיא", "קיב", "קיג", "קיד", "קטו", "קטז", "קיז", "קיח", "קיט", "קכ", "קכא", "קכב", "קכג", "קכך", "קכה", "קכו", "קכז", "קכח", "קכט", "קל", "קלא", "קלב", "קלג", "קלד", "קלה", "קלו", "קלז", "קלח", "קלט", "קמ", "קמא", "קמב", "קמג", "קמד", "קמה", "קמו", "קמז", "קמח", "קמט", "קנ"];
             return letters[num] || num;
         }
 
@@ -597,7 +617,6 @@
             document.getElementById('userGreeting').innerText = savedName ? `שלום, ${savedName}` : `שלום, אורח`;
         }
 
-        // פונקציה יעילה שבודקת בלחיצה אחת אם הגענו ל-929 פרקים תפוסים
         window.checkGlobalCompletion = function() {
             const banner = document.getElementById('completionBanner');
             const dedicationDiv = document.getElementById('bannerDedication');
@@ -612,7 +631,6 @@
             if (currentCount >= TOTAL_TANACH_CHAPTERS) {
                 dedicationDiv.innerText = window.currentProjectSubtitle || "";
                 banner.style.display = "block";
-                // גלילה קלה כדי שהגולש יראה את הבאנר מיד
                 banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
                 banner.style.display = "none";
@@ -640,6 +658,7 @@
             currentModalMode = "create_study";
             document.getElementById('newManagerInput').value = "";
             document.getElementById('newSubtitleInput').value = "";
+            document.getElementById('newImageInput').value = "";
             openCustomModal("יצירת סבב לימוד תנ\"ך משלכם");
             document.getElementById('modalCancelBtn').style.display = "inline-block";
             document.getElementById('modalCancelBtn').innerText = "ביטול";
@@ -791,6 +810,7 @@
             if (currentModalMode === "create_study") {
                 const manager = document.getElementById('newManagerInput').value.trim();
                 const subtitle = document.getElementById('newSubtitleInput').value.trim();
+                const imageUrl = document.getElementById('newImageInput').value.trim();
                 
                 if (!manager) {
                     alert("אנא מלא את שם מנהל הלימוד.");
@@ -800,7 +820,7 @@
                 const uniqueId = 'study_' + Math.random().toString(36).substring(2, 7) + Date.now().toString(36).substring(4, 8);
                 
                 if (typeof window.createNewStudyInDB === 'function') {
-                    window.createNewStudyInDB(uniqueId, manager, subtitle);
+                    window.createNewStudyInDB(uniqueId, manager, subtitle, imageUrl);
                 }
                 
                 const baseLink = window.location.href.split('?')[0];
