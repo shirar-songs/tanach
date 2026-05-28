@@ -86,21 +86,21 @@
             color: #16a085;
         }
         
-        /* עיצוב הריבוע/חלונית של הסיום המלא (Modal) */
+        /* עיצוב החלונית - קטנה ועדינה יותר */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.4); /* רקע כהה עדין יותר */
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
         }
         .modal-overlay.show {
             opacity: 1;
@@ -108,35 +108,48 @@
         }
         .modal-content {
             background: #fff;
-            padding: 40px;
-            border-radius: 10px;
+            padding: 25px 30px; /* צמצום הריווחים הפנימיים */
+            border-radius: 8px;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            max-width: 500px;
-            width: 90%;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            max-width: 400px; /* הקטנת הרוחב המקסימלי */
+            width: 85%;
             position: relative;
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: popIn 0.3s ease-out;
         }
         @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
+            from { transform: scale(0.92); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
         .close-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 24px;
+            top: 10px;
+            right: 12px;
+            font-size: 20px;
             background: none;
             border: none;
             cursor: pointer;
-            color: #95a5a6;
+            color: #bdc3c7;
         }
         .close-btn:hover {
-            color: #333;
+            color: #7f8c8d;
         }
-        .modal-content h2 {
+        .modal-content h3 {
             color: #27ae60;
-            margin-top: 0;
+            margin-top: 5px;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+        }
+        .modal-text {
+            font-size: 1.05em;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .modal-footer-note {
+            color: #95a5a6;
+            font-size: 0.8em;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -145,32 +158,30 @@
 <div class="container">
     <header>
         <h1>לימוד תנ"ך משותף</h1>
-        <!-- כותרת המשנה והתאריך המעודכנים -->
         <h2 class="site-subtitle">לעילוי נשמת אהובנו הגיבור מעוז ישראל בן אליהו ואיילת שרה למשפחת רקנטי</h2>
         <p class="site-deadline">נא להשלים את הלימוד עד ליום השלושים - כ"ט בסיוון</p>
     </header>
 
-    <!-- כאן יופיעו הספרים והשיבוצים מתוך בסיס הנתונים -->
     <main id="books-container">
         <p style="text-align: center; color: #7f8c8d;">טוען את נתוני השיבוצים...</p>
     </main>
 </div>
 
-<!-- חלונית סיום חגיגית (נפתחת רק כשכל התנ"ך מושלם) -->
+<!-- חלונית סיום קטנה ועדינה (נפתחת רק כשכל התנ"ך מושלם) -->
 <div class="modal-overlay" id="completion-modal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <button class="close-btn" onclick="toggleModal(false)">&times;</button>
-        <h2>אשריכם ישראל! 🎉</h2>
-        <p style="font-size: 1.2em; line-height: 1.5;">
-            כל פרקי התנ"ך שובצו בהצלחה! <br>
+        <h3>תם ונשלם! 🎉</h3>
+        <p class="modal-text">
+            כל פרקי התנ"ך שובצו בהצלחה. <br>
             הלימוד המשותף הושלם לעילוי נשמתו של מעוז ישראל ז"ל.
         </p>
-        <p style="color: #7f8c8d; font-size: 0.9em; margin-top: 20px;">(ניתן לסגור חלונית זו ולהמשיך לצפות בשיבוצים)</p>
+        <p class="modal-footer-note">(בלחיצה מחוץ לריבוע החלונית תיסגר וניתן להמשיך לצפות בשיבוצים)</p>
     </div>
 </div>
 
 <script>
-    // הגדרות החיבור ל-Firebase שלך (יש להחליף בפרטים המדויקים של הפרויקט שלך במידת הצורך)
+    // הגדרות החיבור ל-Firebase שלך (יש לוודא שהפרטים נכונים)
     const firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -197,9 +208,8 @@
     // פונקציה שמציגה את הספרים והפרקים על המסך
     function renderBooks(data) {
         const container = document.getElementById('books-container');
-        container.innerHTML = ''; // ניקוי הטעינה
+        container.innerHTML = ''; 
 
-        // רשימת הספרים המלאה לפי סדר ה-JSON שלך
         const booksOrder = [
             'בראשית', 'שמות', 'ויקרא', 'במדבר', 'דברים', 
             'יהושע', 'שופטים', 'שמואל א', 'שמואל ב', 'מלכים א', 'מלכים ב',
@@ -208,7 +218,7 @@
         ];
 
         booksOrder.forEach(bookName => {
-            if (!data[bookName]) return; // אם הספר לא קיים ב-JSON, מדלגים עליו
+            if (!data[bookName]) return; 
 
             const bookSection = document.createElement('div');
             bookSection.className = 'book-section';
@@ -221,13 +231,11 @@
             const grid = document.createElement('div');
             grid.className = 'chapters-grid';
 
-            // מעבר על כל הפרקים שנמצאים תחת אותו הספר בבסיס הנתונים
             Object.keys(data[bookName]).forEach(chapterNum => {
                 const info = data[bookName][chapterNum];
                 const card = document.createElement('div');
                 card.className = 'chapter-card';
 
-                // אם יש לומד רשום (השדה אינו ריק ואינו חופשי)
                 if (info && info.learner && info.learner.trim() !== "" && info.status === "taken") {
                     card.classList.add('taken');
                     card.innerHTML = `פרק ${chapterNum} <span class="user-name">${info.learner}</span>`;
@@ -248,13 +256,11 @@
         let allTaken = true;
         let hasData = false;
 
-        // עוברים על כל הנתונים ובודקים אם יש פרק שנשאר פנוי
         Object.keys(data).forEach(book => {
             if (typeof data[book] === 'object') {
                 Object.keys(data[book]).forEach(chapter => {
                     hasData = true;
                     const chapterInfo = data[book][chapter];
-                    // אם יש פרק שאין לו לומד או שהסטטוס שלו לא תפוס
                     if (!chapterInfo || !chapterInfo.learner || chapterInfo.status !== "taken") {
                         allTaken = false;
                     }
@@ -262,7 +268,6 @@
             }
         });
 
-        // אם הכל מלא, נפתח את חלונית הסיום
         if (hasData && allTaken) {
             toggleModal(true);
         } else {
