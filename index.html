@@ -552,8 +552,12 @@
         <button class="category-btn" onclick="showBooks('neviim')">פרקים בנביאים</button>
         <button class="category-btn" onclick="showBooks('ktuvim')">פרקים בכתובים</button>
     </div>
+<div id="booksContainer" class="books-container" style="display: none;"></div>
 
-    <div id="booksContainer" class="books-container" style="display: none;"></div>
+    <!-- צעד 1: המלבן הדק והמעוצב בצבע חום שנוסף כאן באמצע -->
+    <div id="statsCounterBox" style="max-width: 600px; margin: 15px auto; padding: 6px 12px; background-color: #fdfbf7; border: 1px solid #dcd5ca; border-radius: 20px; font-weight: bold; color: #5a4a42; font-size: 14px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        עד כה, השתבצו <span id="statsUsersCount" style="color: #5a4a42;">0</span> לומדים ל-<span id="statsChaptersCount" style="color: #5a4a42;">0</span> פרקים
+    </div>
 
     <div class="footer-container">
         <div class="footer-link">
@@ -610,8 +614,7 @@
             const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל", "לא", "לב", "לג", "לד", "לה", "לו", "לז", "לח", "לט", "מ", "מא", "מב", "מג", "מד", "מה", "מו", "מז", "מח", "מט", "נ", "נא", "נב", "נג", "נד", "נה", "נו", "נז", "נח", "נט", "ס", "סא", "סב", "סג", "סד", "סה", "סו", "סז", "סח", "סט", "ע", "עא", "עב", "עג", "עד", "עה", "עו", "עז", "עח", "עט", "פ", "פא", "פב", "פג", "פד", "פה", "פו", "פז", "פח", "פט", "צ", "צא", "צב", "צג", "צד", "צה", "צו", "צח", "צט", "ק", "קא", "קב", "קג", "קד", "קה", "קו", "קז", "קח", "קט", "קי", "קיא", "קיב", "קיג", "קיד", "קטו", "קטז", "קיז", "קיח", "קיט", "קכ", "קכא", "קכב", "קכג", "קכך", "קכה", "קכו", "קכז", "קכח", "קכט", "קל", "קלא", "קלב", "קלג", "קלד", "קלה", "קלו", "קלז", "קלח", "קלט", "קמ", "קמא", "קמב", "קמג", "קמד", "קמה", "קמו", "קמז", "קמח", "קמט", "קנ"];
             return letters[num] || num;
         }
-
-        window.currentActiveCategory = "";
+window.currentActiveCategory = "";
         window.activeBookName = "";
         window.activeTotalChapters = 0;
         let pendingChapterKey = "";
@@ -621,23 +624,64 @@
             const savedName = localStorage.getItem('tanach_user_name');
             document.getElementById('userGreeting').innerText = savedName ? `שלום, ${savedName}` : `שלום, אורח`;
         }
-window.checkGlobalCompletion = function() {
+
+        window.checkGlobalCompletion = function() {
             const banner = document.getElementById('completionBanner');
             const dedicationDiv = document.getElementById('bannerDedication');
-            const nextRoundBox = document.getElementById('nextRoundBox'); // שורה חדשה שתופסת את התיבה
+            const nextRoundBox = document.getElementById('nextRoundBox');
+            
+            // אלמנטים של ריבוע הסטטיסטיקה החדש
+            const statsUsersCount = document.getElementById('statsUsersCount');
+            const statsChaptersCount = document.getElementById('statsChaptersCount');
             
             if (!window.takenChapters) {
-                banner.style.display = "none";
+                if (banner) banner.style.display = "none";
+                if (statsUsersCount) statsUsersCount.innerText = "0";
+                if (statsChaptersCount) statsChaptersCount.innerText = "0";
                 return;
             }
 
             const currentCount = Object.keys(window.takenChapters).length;
+
+            // --- עדכון מספרים בזמן אמת במלבן החום ---
+            if (statsChaptersCount) {
+                statsChaptersCount.innerText = currentCount;
+            }
+            
+            if (statsUsersCount) {
+                const uniqueUsers = new Set();
+                Object.values(window.takenChapters).forEach(chapter => {
+                    if (chapter && typeof chapter === 'object' && chapter.name) {
+                        uniqueUsers.add(chapter.name.trim());
+                    } else if (typeof chapter === 'string') {
+                        uniqueUsers.add(chapter.trim());
+                    }
+                });
+                statsUsersCount.innerText = uniqueUsers.size;
+            }
+            // ----------------------------------------
 
             if (currentCount >= TOTAL_TANACH_CHAPTERS) {
                 if (dedicationDiv) {
                     dedicationDiv.innerText = window.currentProjectSubtitle || "";
                 }
 
+                if (nextRoundBox) {
+                    if (window.studyID === 'maoz_original' || window.studyID === null) {
+                        nextRoundBox.style.display = "block";
+                    } else {
+                        nextRoundBox.style.display = "none";
+                    }
+                }
+
+                if (banner) {
+                    banner.style.display = "block";
+                    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } else {
+                if (banner) banner.style.display = "none";
+            }
+        };
                 // הבדיקה החדשה שמציגה את הקישור רק בסבב הראשון ומסתירה אותו בכל סבב אחר
                 if (nextRoundBox) {
                     if (window.studyID === 'maoz_original' || window.studyID === null) {
