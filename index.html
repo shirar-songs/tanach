@@ -452,10 +452,12 @@
                 } else {
                     mainImg.style.display = "none";
                 }
-
-                window.takenChapters = data.takenChapters || {};
+window.takenChapters = data.takenChapters || {};
                 
-                window.checkGlobalCompletion();
+                // הפעלה בטוחה של החישוב מיד עם טעינת הנתונים
+                if (typeof window.checkGlobalCompletion === 'function') {
+                    window.checkGlobalCompletion();
+                }
 
                 if (window.currentActiveCategory) {
                     window.showBooks(window.currentActiveCategory);
@@ -480,13 +482,18 @@
                     goOffline(database);
                     onFailure(snapshot.val().name || "מישהו אחר");
                 } else {
-                    const userName = localStorage.getItem('tanach_user_name') || "לומד/ת";
+                    const userName = localStorage.getItem('tanach_user_name') || "לומד";
                     set(chapterRef, {
                         uid: window.userUUID,
                         name: userName
                     }).then(() => {
                         window.takenChapters[chapterKey] = { uid: window.userUUID, name: userName };
-                        window.checkGlobalCompletion();
+                        
+                        // עדכון המלבן החום מיד כשמישהו נרשם בהצלחה לפרק
+                        if (typeof window.checkGlobalCompletion === 'function') {
+                            window.checkGlobalCompletion();
+                        }
+                        
                         goOffline(database);
                         onSuccess();
                     });
