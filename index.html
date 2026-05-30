@@ -535,13 +535,12 @@
         <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
         <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
     </div>
-
-    <div id="completionBanner" class="completion-banner">
+<div id="completionBanner" class="completion-banner">
         <h2>ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך!</h2>
         <div id="bannerDedication" class="dedication-line"></div>
         
-        <!-- הבלוק המעוצב החדש עם הקישור לסבב הבא -->
-        <div style="margin: 18px auto; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; max-width: 90%; border: 1px solid rgba(255, 255, 255, 0.25);">
+        <!-- הוספנו id="nextRoundBox" כדי שה-JS יוכל להסתיר את הקופסה הזו בסבב השני -->
+        <div id="nextRoundBox" style="margin: 18px auto; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; max-width: 90%; border: 1px solid rgba(255, 255, 255, 0.25);">
             <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: #fff;">מי שרוצה, פתחנו קישור לסבב חדש - מוזמנים להיכנס 👇</p>
             <a href="https://shirar-songs.github.io/tanach/?study=study_hnuvb54ku" target="_blank" style="color: #fff; text-decoration: underline; font-weight: bold; word-break: break-all; font-size: 15px; display: inline-block;">הקליקו כאן למעבר לסבב החדש</a>
         </div>
@@ -622,10 +621,10 @@
             const savedName = localStorage.getItem('tanach_user_name');
             document.getElementById('userGreeting').innerText = savedName ? `שלום, ${savedName}` : `שלום, אורח`;
         }
-
-        window.checkGlobalCompletion = function() {
+window.checkGlobalCompletion = function() {
             const banner = document.getElementById('completionBanner');
             const dedicationDiv = document.getElementById('bannerDedication');
+            const nextRoundBox = document.getElementById('nextRoundBox'); // שורה חדשה שתופסת את התיבה
             
             if (!window.takenChapters) {
                 banner.style.display = "none";
@@ -635,7 +634,19 @@
             const currentCount = Object.keys(window.takenChapters).length;
 
             if (currentCount >= TOTAL_TANACH_CHAPTERS) {
-                dedicationDiv.innerText = window.currentProjectSubtitle || "";
+                if (dedicationDiv) {
+                    dedicationDiv.innerText = window.currentProjectSubtitle || "";
+                }
+
+                // הבדיקה החדשה שמציגה את הקישור רק בסבב הראשון ומסתירה אותו בכל סבב אחר
+                if (nextRoundBox) {
+                    if (window.studyID === 'maoz_original' || window.studyID === null) {
+                        nextRoundBox.style.display = "block";
+                    } else {
+                        nextRoundBox.style.display = "none";
+                    }
+                }
+
                 banner.style.display = "block";
                 banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } else {
