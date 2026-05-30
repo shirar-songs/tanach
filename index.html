@@ -465,13 +465,35 @@ window.takenChapters = data.takenChapters || {};
                 if (window.activeBookName) {
                     window.refreshChaptersDisplay();
                 }
-                
                 goOffline(database);
             }).catch((err) => {
                 console.error(err);
                 goOffline(database);
             });
         };
+
+        // פונקציה פנימית ועצמאית לעדכון מהיר של המלבן החום
+        function updateLiveStatsBox() {
+            const statsUsersCount = document.getElementById('statsUsersCount');
+            const statsChaptersCount = document.getElementById('statsChaptersCount');
+            if (!window.takenChapters) return;
+
+            const currentCount = Object.keys(window.takenChapters).length;
+            if (statsChaptersCount) {
+                statsChaptersCount.innerText = currentCount;
+            }
+            if (statsUsersCount) {
+                const uniqueUsers = new Set();
+                Object.values(window.takenChapters).forEach(chapter => {
+                    if (chapter && typeof chapter === 'object' && chapter.name) {
+                        uniqueUsers.add(chapter.name.trim());
+                    } else if (typeof chapter === 'string') {
+                        uniqueUsers.add(chapter.trim());
+                    }
+                });
+                statsUsersCount.innerText = uniqueUsers.size;
+            }
+        }
 
         window.saveChapterToDatabase = function(chapterKey, onSuccess, onFailure) {
             goOnline(database);
@@ -489,9 +511,11 @@ window.takenChapters = data.takenChapters || {};
                     }).then(() => {
                         window.takenChapters[chapterKey] = { uid: window.userUUID, name: userName };
                         
-                        // עדכון המלבן החום מיד כשמישהו נרשם בהצלחה לפרק
+                        // עדכון הסטטיסטיקה מיד ברישום
+                        updateLiveStatsBox();
+
                         if (typeof window.checkGlobalCompletion === 'function') {
-                            window.checkGlobalCompletion();
+                            try { window.checkGlobalCompletion(); } catch(e) {}
                         }
                         
                         goOffline(database);
@@ -505,7 +529,13 @@ window.takenChapters = data.takenChapters || {};
             goOnline(database);
             remove(ref(database, 'studies/' + window.studyID + '/takenChapters/' + chapterKey)).then(() => {
                 delete window.takenChapters[chapterKey];
-                window.checkGlobalCompletion();
+                
+                // עדכון הסטטיסטיקה מיד בביטול
+                updateLiveStatsBox();
+
+                if (typeof window.checkGlobalCompletion === 'function') {
+                    try { window.checkGlobalCompletion(); } catch(e) {}
+                }
                 goOffline(database);
                 onSuccess();
             }).catch(() => goOffline(database));
@@ -526,6 +556,33 @@ window.takenChapters = data.takenChapters || {};
             localStorage.setItem('tanach_user_uuid', uuid);
         }
         window.userUUID = localStorage.getItem('tanach_user_uuid');
+
+        // בטעינה הראשונית - נפעיל את העדכון מיד אחרי שהדאטהבייס מסיים לטעון
+        const originalLoadSnapshot = window.loadSnapshotFromDatabase;
+        window.loadSnapshotFromDatabase = function() {
+            goOnline(database);
+            get(ref(database, 'studies/' + window.studyID)).then((snapshot) => {
+                const data = snapshot.val() || {};
+                window.takenChapters = data.takenChapters || {};
+                
+                // עדכון ישיר של המלבן החום בטעינה
+                updateLiveStatsBox();
+
+                if (typeof window.checkGlobalCompletion === 'function') {
+                    try { window.checkGlobalCompletion(); } catch(e) {}
+                }
+                if (window.currentActiveCategory) {
+                    window.showBooks(window.currentActiveCategory);
+                }
+                if (window.activeBookName) {
+                    window.refreshChaptersDisplay();
+                }
+                goOffline(database);
+            }).catch((err) => {
+                console.error(err);
+                goOffline(database);
+            });
+        };
 
         window.loadSnapshotFromDatabase();
     </script>
