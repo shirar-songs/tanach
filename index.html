@@ -530,7 +530,7 @@
         <div id="userGreeting" class="user-greeting" onclick="editCurrentName()" title="לחץ לשינוי השם">שלום, אורח</div>
     </div>
 
-  <div class="header-container">
+<div class="header-container">
         <h1 id="mainTitle">לומדים את התנ"ך ביחד</h1>
         <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
         <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
@@ -541,9 +541,8 @@
         
         <div id="nextRoundBox" style="margin: 18px auto; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; max-width: 90%; border: 1px solid rgba(255, 255, 255, 0.25);">
             <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: #fff;">מי שרוצה, פתחנו קישור לסבב חדש - מוזמנים להיכנס 👇</p>
-            <a href="https://shirar-songs.github.io/tanach/?study=study_kynzcq47w" style="color: #fff; text-decoration: underline; font-weight: bold; word-break: break-all; font-size: 15px; display: inline-block;">הקליקו כאן למעבר לסבב החדש</a>
+            <a id="dynamicNextRoundLink" href="https://shirar-songs.github.io/tanach/?study=study_kynzcq47w" style="color: #fff; text-decoration: underline; font-weight: bold; word-break: break-all; font-size: 15px; display: inline-block;">הקליקו כאן למעבר לסבב החדש</a>
         </div>
-
         <p style="margin-top: 10px; margin-bottom: 0;">בשורות טובות לכל עם ישראל! ❤️</p>
     </div>
     <div class="main-categories">
@@ -618,7 +617,7 @@
         function updateGreetingDisplay() {
             const savedName = localStorage.getItem('tanach_user_name');
             document.getElementById('userGreeting').innerText = savedName ? `שלום, ${savedName}` : `שלום, אורח`;
-    }
+   }
 window.checkGlobalCompletion = function() {
             const banner = document.getElementById('completionBanner');
             const dedicationDiv = document.getElementById('bannerDedication');
@@ -652,6 +651,13 @@ window.checkGlobalCompletion = function() {
                 }
                 // --------------------------------------------------
 
+                // --- הזרקה בכוח של הקישור המעודכן ביותר לסבב 3 (כדי לעקוף זיכרון מטמון ישן) ---
+                const dynamicLink = document.getElementById('dynamicNextRoundLink');
+                if (dynamicLink) {
+                    dynamicLink.href = "https://shirar-songs.github.io/tanach/?study=study_kynzcq47w";
+                }
+                // --------------------------------------------------
+
                 // הלחצן לסבב החדש יוצג גם בסבב 1 וגם בסבב 2 כדי להעביר את כולם לסבב 3
                 if (nextRoundBox) {
                     if (window.studyID === 'maoz_original' || window.studyID === null || window.studyID === 'study_hnuvb54ku') {
@@ -669,7 +675,6 @@ window.checkGlobalCompletion = function() {
                 if (banner) banner.style.display = "none";
             }
         };
-
         function checkAndPromptName() {
             if (!localStorage.getItem('tanach_user_name')) {
                 currentModalMode = "ask_name";
