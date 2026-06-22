@@ -534,15 +534,14 @@
         <h1 id="mainTitle">לומדים את התנ"ך ביחד</h1>
         <p id="subTitle" class="subtitle">לעילוי נשמת אהובנו הגיבור<br>מעוז ישראל רקנטי הי"ד</p>
         <img id="mainProjectImage" class="dedication-image" src="" alt="תמונת הקדשה">
-    </div>
+   </div>
 <div id="completionBanner" class="completion-banner">
-        <h2>ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך!</h2>
+        <h2 id="dynamicCompletionTitle">ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך!</h2>
         <div id="bannerDedication" class="dedication-line"></div>
         
-        <!-- הוספנו id="nextRoundBox" כדי שה-JS יוכל להסתיר את הקופסה הזו בסבב השני -->
         <div id="nextRoundBox" style="margin: 18px auto; padding: 12px; background: rgba(255, 255, 255, 0.15); border-radius: 6px; max-width: 90%; border: 1px solid rgba(255, 255, 255, 0.25);">
             <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: #fff;">מי שרוצה, פתחנו קישור לסבב חדש - מוזמנים להיכנס 👇</p>
-            <a href="https://shirar-songs.github.io/tanach/?study=study_hnuvb54ku" target="_blank" style="color: #fff; text-decoration: underline; font-weight: bold; word-break: break-all; font-size: 15px; display: inline-block;">הקליקו כאן למעבר לסבב החדש</a>
+            <a href="https://shirar-songs.github.io/tanach/?study=study_kynzcq47w" style="color: #fff; text-decoration: underline; font-weight: bold; word-break: break-all; font-size: 15px; display: inline-block;">הקליקו כאן למעבר לסבב החדש</a>
         </div>
 
         <p style="margin-top: 10px; margin-bottom: 0;">בשורות טובות לכל עם ישראל! ❤️</p>
@@ -564,7 +563,6 @@
             <img src="https://flagcdn.com/w40/il.png" class="flag-img" alt="דגל ישראל">
         </div>
     </div>
-
     <div id="customModalOverlay" class="custom-modal-overlay">
         <div id="modalCard" class="custom-modal">
             <h2 id="modalText"></h2>
@@ -620,14 +618,14 @@
         function updateGreetingDisplay() {
             const savedName = localStorage.getItem('tanach_user_name');
             document.getElementById('userGreeting').innerText = savedName ? `שלום, ${savedName}` : `שלום, אורח`;
-        }
+    }
 window.checkGlobalCompletion = function() {
             const banner = document.getElementById('completionBanner');
             const dedicationDiv = document.getElementById('bannerDedication');
-            const nextRoundBox = document.getElementById('nextRoundBox'); // שורה חדשה שתופסת את התיבה
+            const nextRoundBox = document.getElementById('nextRoundBox');
             
             if (!window.takenChapters) {
-                banner.style.display = "none";
+                if (banner) banner.style.display = "none";
                 return;
             }
 
@@ -638,19 +636,37 @@ window.checkGlobalCompletion = function() {
                     dedicationDiv.innerText = window.currentProjectSubtitle || "";
                 }
 
-                // הבדיקה החדשה שמציגה את הקישור רק בסבב הראשון ומסתירה אותו בכל סבב אחר
+                // --- עדכון מספר הסבבים שהושלמו אוטומטית לפי סוג הקישור ---
+                const dynamicTitle = document.getElementById('dynamicCompletionTitle');
+                if (dynamicTitle) {
+                    if (window.studyID === 'maoz_original' || window.studyID === null || window.studyID === 'study_hnuvb54ku') {
+                        // בסבב 1 ובסבב 2 שהושלמו - נציג שסיימנו כבר 2 פעמים
+                        dynamicTitle.innerText = "ב''ה השלמנו ביחד 2 פעמים את לימוד כל פרקי התנ''ך!";
+                    } else if (window.studyID === 'study_kynzcq47w') {
+                        // בעתיד כשהסבב השלישי החדש יסתיים
+                        dynamicTitle.innerText = "ב''ה השלמנו ביחד 3 פעמים את לימוד כל פרקי התנ''ך!";
+                    } else {
+                        // ברירת מחדל כללית
+                        dynamicTitle.innerText = "ב''ה השלמנו ביחד את לימוד כל פרקי התנ''ך!";
+                    }
+                }
+                // --------------------------------------------------
+
+                // הלחצן לסבב החדש יוצג גם בסבב 1 וגם בסבב 2 כדי להעביר את כולם לסבב 3
                 if (nextRoundBox) {
-                    if (window.studyID === 'maoz_original' || window.studyID === null) {
+                    if (window.studyID === 'maoz_original' || window.studyID === null || window.studyID === 'study_hnuvb54ku') {
                         nextRoundBox.style.display = "block";
                     } else {
                         nextRoundBox.style.display = "none";
                     }
                 }
 
-                banner.style.display = "block";
-                banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (banner) {
+                    banner.style.display = "block";
+                    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             } else {
-                banner.style.display = "none";
+                if (banner) banner.style.display = "none";
             }
         };
 
